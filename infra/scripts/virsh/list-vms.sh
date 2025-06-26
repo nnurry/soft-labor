@@ -1,5 +1,5 @@
 #!/bin/bash
-
+export LIBVIRT_DEFAULT_URI=${LIBVIRT_DEFAULT_URI:-qemu:///system}
 # Always start with --all in the arguments array
 VIRSH_LIST_ARGS=("--all")
 

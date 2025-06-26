@@ -1,5 +1,5 @@
 #!/bin/bash
-
+export LIBVIRT_DEFAULT_URI=${LIBVIRT_DEFAULT_URI:-qemu:///system}
 # --- Input Validation ---
 VM_NAME="$1"
 

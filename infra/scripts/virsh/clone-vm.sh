@@ -1,5 +1,5 @@
 #!/bin/bash
-
+export LIBVIRT_DEFAULT_URI=${LIBVIRT_DEFAULT_URI:-qemu:///system}
 BASE_DISK_DIR="/var/lib/libvirt/images"
 
 if [ "$#" -lt 2 ]; then
