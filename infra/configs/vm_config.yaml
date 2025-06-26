@@ -1,0 +1,32 @@
+base_vm_name: "leap-base-vm"
+
+master_nodes:
+  - name: "leap-k8s-master-1"
+    ip_address: "192.168.122.101"
+    vcpu: 2
+    memory_gb: 8
+    disk_gb: 50
+    mac_address: "52:54:00:00:00:01"
+
+worker_nodes:
+  - name: "leap-k8s-worker-1"
+    ip_address: "192.168.122.111"
+    vcpu: 2
+    memory_gb: 16
+    disk_gb: 80
+    mac_address: "52:54:00:00:00:11"
+  - name: "leap-k8s-worker-2"
+    ip_address: "192.168.122.112"
+    vcpu: 2
+    memory_gb: 16
+    disk_gb: 80
+    mac_address: "52:54:00:00:00:12"
+  - name: "leap-k8s-worker-3"
+    ip_address: "192.168.122.113"
+    vcpu: 2
+    memory_gb: 16
+    disk_gb: 80
+    mac_address: "52:54:00:00:00:13"
+
+ssh_user: root
+ssh_private_key_path: "~/.ssh/~/.ssh/shared-VM-ssh-key-id_ed25519"
