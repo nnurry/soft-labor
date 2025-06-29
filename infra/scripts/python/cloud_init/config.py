@@ -30,33 +30,29 @@ class UserData:
         self.runcmd = runcmd if runcmd is not None else []
 
     def to_yaml(self) -> str:
-        users_section = [
-            {
-                "name": self.ssh_user,
-                "sudo": "ALL=(ALL) NOPASSWD:ALL",
-                "ssh_authorized_keys": self.ssh_public_keys_content,
-            }
-        ]
-
-        network_section = {
-            "version": 2,
-            "ethernets": {
-                "eth0": {
-                    "dhcp4": False,
-                    "addresses": [f"{self.ip_address}/24"],
-                    "gateway4": self.gateway,
-                    "nameservers": {"addresses": self.nameservers},
-                }
-            },
-        }
-
         user_data_content = {
             "#cloud-config": "",
             "hostname": self.hostname,
             "manage_etc_hosts": True,
             "disable_root_pw": True,
-            "users": users_section,
-            "network": network_section,
+            "users": [
+                {
+                    "name": self.ssh_user,
+                    "sudo": "ALL=(ALL) NOPASSWD:ALL",
+                    "ssh_authorized_keys": self.ssh_public_keys_content,
+                }
+            ],
+            "network": {
+                "version": 2,
+                "ethernets": {
+                    "eth0": {
+                        "dhcp4": False,
+                        "addresses": [f"{self.ip_address}/24"],
+                        "gateway4": self.gateway,
+                        "nameservers": {"addresses": self.nameservers},
+                    }
+                },
+            },
         }
 
         if self.timezone:

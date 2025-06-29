@@ -86,11 +86,15 @@ class VMBuilder:
 
         for interface in root.findall(".//interface[@type='bridge']"):
             source = interface.find("source")
-            if source is not None and source.get("bridge") == "virbr0":
+            if source is not None and "br0" in source.get("bridge"):
                 mac = interface.find("mac")
                 if mac is not None:
                     mac.set("address", self.mac_address)
                 break
+
+        disks_parent = root.find(".//disk[@device='cdrom']..")
+        for disk in disks_parent.findall(".//disk[@device='cdrom']"):
+            disks_parent.remove(disk)
 
         disk_elem = ET.SubElement(root, "disk", {"type": "file", "device": "cdrom"})
         ET.SubElement(disk_elem, "driver", {"name": "qemu", "type": "raw"})
@@ -98,6 +102,8 @@ class VMBuilder:
         ET.SubElement(disk_elem, "target", {"dev": "hdc", "bus": "sata"})
         ET.SubElement(disk_elem, "readonly")
         ET.SubElement(disk_elem, "boot", {"order": "2"})
+
+        disks_parent.append(disk_elem)
 
         os_boot_elem = root.find(".//os/boot")
         if os_boot_elem is not None:

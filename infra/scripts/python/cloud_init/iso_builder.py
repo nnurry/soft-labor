@@ -12,6 +12,8 @@ class CloudInitISOBuilder:
         self.iso_path = os.path.join(
             self.vm_output_dir, f"{config.user_data_config.hostname}-cidata.iso"
         )
+        self.vm_output_dir = os.path.abspath(self.vm_output_dir)
+        self.iso_path = os.path.abspath(self.iso_path)
 
     def build_iso(self) -> str:
         self.config.save_configs(self.vm_output_dir)
@@ -28,6 +30,7 @@ class CloudInitISOBuilder:
                 os.path.join(self.vm_output_dir, "user-data"),
                 os.path.join(self.vm_output_dir, "meta-data"),
             ]
+            
             OSUtils.run_command(mkisofs_cmd)
         except FileNotFoundError as e:
             raise RuntimeError(
