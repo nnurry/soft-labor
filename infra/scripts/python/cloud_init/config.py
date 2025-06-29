@@ -31,7 +31,6 @@ class UserData:
 
     def to_yaml(self) -> str:
         user_data_content = {
-            "#cloud-config": "",
             "hostname": self.hostname,
             "manage_etc_hosts": True,
             "disable_root_pw": True,
@@ -64,8 +63,12 @@ class UserData:
         if self.runcmd:
             user_data_content["runcmd"] = self.runcmd
 
-        return yaml.dump(
-            user_data_content, indent=2, default_flow_style=False, sort_keys=False
+        return (
+            "#cloud-config"
+            + "\n"
+            + yaml.dump(
+                user_data_content, indent=2, default_flow_style=False, sort_keys=False
+            )
         )
 
 
