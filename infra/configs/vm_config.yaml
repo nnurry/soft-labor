@@ -13,19 +13,19 @@ worker_nodes:
     ip_address: "192.168.122.111"
     vcpu: 2
     memory_gb: 16
-    disk_gb: 80
+    disk_gb: 50
     mac_address: "52:54:00:00:00:11"
   - name: "leap-k8s-worker-2"
     ip_address: "192.168.122.112"
     vcpu: 2
     memory_gb: 16
-    disk_gb: 80
+    disk_gb: 50
     mac_address: "52:54:00:00:00:12"
   - name: "leap-k8s-worker-3"
     ip_address: "192.168.122.113"
     vcpu: 2
     memory_gb: 16
-    disk_gb: 80
+    disk_gb: 50
     mac_address: "52:54:00:00:00:13"
 
 ssh_user: root
