@@ -96,7 +96,7 @@ class VMBuilder:
         for disk in disks_parent.findall(".//disk[@device='cdrom']"):
             disks_parent.remove(disk)
 
-        disk_elem = ET.SubElement(root, "disk", {"type": "file", "device": "cdrom"})
+        disk_elem = ET.Element("disk", {"type": "file", "device": "cdrom"})
         ET.SubElement(disk_elem, "driver", {"name": "qemu", "type": "raw"})
         ET.SubElement(disk_elem, "source", {"file": self.cloud_init_iso_path})
         ET.SubElement(disk_elem, "target", {"dev": "hdc", "bus": "sata"})
