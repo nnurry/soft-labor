@@ -1,4 +1,4 @@
-base_vm_name: "leap-base-vm-latest"
+base_vm_name: "leap-base-VM-latest"
 
 master_nodes:
   - name: "leap-k8s-master-1"
