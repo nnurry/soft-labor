@@ -82,11 +82,11 @@ class CLI:
 
     def delete_vm(self, vm_name: str):
         try:
-            OSUtils.run_command(["virsh", "destroy", vm_name], sudo=True)
+            OSUtils.run_command(["virsh", "destroy", vm_name], sudo=True, capture_output=False)
+        except Exception:
+            pass
+        try:
             OSUtils.run_command(["virsh", "undefine", vm_name], sudo=True)
-            # Optional: Delete associated disk image and cloud-init directory
-            # For this, you would need to store/retrieve disk path and cloud-init path
-            # from your records or VM XML. Let's skip for now to keep it simpler.
             print(f"VM {vm_name} destroyed and undefined.")
         except Exception as e:
             print(f"Error deleting VM {vm_name}: {e}")
