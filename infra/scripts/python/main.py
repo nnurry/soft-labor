@@ -121,19 +121,33 @@ if __name__ == "__main__":
     )
 
     create_parser = subparsers.add_parser(
-        "create", help="Create a virtual machine based on the configuration."
+        "create", help="Create one or all virtual machines."
     )
-    create_parser.add_argument(
+    create_group = create_parser.add_mutually_exclusive_group(required=True)
+    create_group.add_argument(
         "node_name",
         nargs="?",
-        help="Specify a single node to create by name (e.g., 'test-k8s-master-1').\n"
-        "If omitted, all nodes defined in the config file will be created.",
+        help="Specify a single node to create by name (e.g., 'test-k8s-master-1').",
+    )
+    create_group.add_argument(
+        "--all",
+        action="store_true",
+        help="Create all VMs defined in the configuration file.",
     )
 
-    delete_parser = subparsers.add_parser("delete", help="Delete a virtual machine.")
-    delete_parser.add_argument(
+    delete_parser = subparsers.add_parser(
+        "delete", help="Delete one or all virtual machines."
+    )
+    delete_group = delete_parser.add_mutually_exclusive_group(required=True)
+    delete_group.add_argument(
         "vm_name",
+        nargs="?",
         help="The name of the VM to delete (e.g., 'test-k8s-master-1').",
+    )
+    delete_group.add_argument(
+        "--all",
+        action="store_true",
+        help="Delete all VMs defined in the configuration file.",
     )
 
     args = parser.parse_args()
@@ -150,7 +164,11 @@ if __name__ == "__main__":
         if args.command == "list":
             cli_app.list_vms()
         elif args.command == "create":
-            if args.node_name:
+            if args.all:
+                print("Creating all VMs defined in the configuration...")
+                for node_config in cli_app.all_nodes_config:
+                    cli_app.create_vm(node_config)
+            elif args.node_name:
                 found_node = None
                 for node in cli_app.all_nodes_config:
                     if node["name"] == args.node_name:
@@ -161,16 +179,23 @@ if __name__ == "__main__":
                 else:
                     print(f"Error: Node '{args.node_name}' not found in configuration.")
             else:
-                for node_config in cli_app.all_nodes_config:
-                    cli_app.create_vm(node_config)
+                create_parser.print_help()
+
         elif args.command == "delete":
-            cli_app.delete_vm(args.vm_name)
+            if args.all:
+                print("Deleting all VMs defined in the configuration...")
+                for node_config in cli_app.all_nodes_config:
+                    cli_app.delete_vm(node_config["name"])
+            elif args.vm_name:
+                cli_app.delete_vm(args.vm_name)
+            else:
+                delete_parser.print_help()
+
         else:
             parser.print_help()  # If no command is given, print general help
 
     except FileNotFoundError as fnfe:
         print(f"Error: {fnfe}")
-        # Exit with a non-zero status code to indicate an error
         exit(1)
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
