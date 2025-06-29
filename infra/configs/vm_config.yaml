@@ -29,4 +29,4 @@ worker_nodes:
     mac_address: "52:54:00:00:00:13"
 
 ssh_user: root
-ssh_private_key_path: "~/.ssh/~/.ssh/shared-VM-ssh-key-id_ed25519"
+ssh_private_key_path: "~/.ssh/shared-VM-ssh-key-id_ed25519"
