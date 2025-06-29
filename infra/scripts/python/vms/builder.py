@@ -37,6 +37,8 @@ class VMBuilder:
             "qcow2",
             "-b",
             base_disk_path,
+            "-F",
+            "qcow2",
             new_disk_path,
             f"{self.disk_gb}G",
         ]
@@ -60,6 +62,10 @@ class VMBuilder:
         vcpu_elem = root.find("vcpu")
         if vcpu_elem is not None:
             vcpu_elem.text = str(self.vcpu)
+
+        cpu_topology_elem = root.find("cpu/topology")
+        if cpu_topology_elem is not None:
+            cpu_topology_elem.set("cores", str(self.vcpu))
 
         memory_mb = int(self.memory_gb * 1024)
         memory_elem = root.find("memory")
@@ -86,9 +92,6 @@ class VMBuilder:
                     mac.set("address", self.mac_address)
                 break
 
-        for disk in root.findall(".//disk[@device='cdrom']"):
-            root.remove(disk)
-
         disk_elem = ET.SubElement(root, "disk", {"type": "file", "device": "cdrom"})
         ET.SubElement(disk_elem, "driver", {"name": "qemu", "type": "raw"})
         ET.SubElement(disk_elem, "source", {"file": self.cloud_init_iso_path})
@@ -107,8 +110,13 @@ class VMBuilder:
         new_disk_path = self._clone_disk(base_disk_path)
 
         vm_xml = self._generate_vm_xml(new_disk_path)
+        xml_path = f"/tmp/vm-{uuid.uuid4()}.xml"
+        with open(xml_path, "w") as file:
+            file.write(vm_xml)
 
-        OSUtils.run_command(
-            ["virsh", "define", "/dev/stdin"], input=vm_xml.encode(), sudo=True
-        )
-        OSUtils.run_command(["virsh", "start", self.vm_name], sudo=True)
+        try:
+            OSUtils.run_command(["virsh", "define", "--file", xml_path], sudo=True)
+            OSUtils.run_command(["virsh", "start", self.vm_name], sudo=True)
+        except Exception as e:
+            os.remove(xml_path)
+            raise e

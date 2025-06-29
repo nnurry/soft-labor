@@ -1,10 +1,12 @@
 import os
+import argparse
 
 from cloud_init.config import CloudInit
 from cloud_init.iso_builder import CloudInitISOBuilder
 from utils import OSUtils
 from vms.builder import VMBuilder
 from vms.parser import VMConfigParser
+
 
 class CLI:
     def __init__(
@@ -47,7 +49,7 @@ class CLI:
                 print(f"VM {vm_name} already exists. Skipping creation.")
                 return
 
-            cloud_init_config_instance = CloudInit(  # noqa: F821
+            cloud_init_config_instance = CloudInit(
                 hostname=vm_name,
                 ip_address=node_config["ip_address"],
                 ssh_user=self.config_parser.ssh_user,
@@ -97,61 +99,79 @@ class CLI:
         print("  list_available_commands()")
 
 
-
 if __name__ == "__main__":
-    CONFIG_FILE = "vm_config.yaml"  # Make sure this file exists with your config
+    CONFIG_FILE = "vm_config.yaml"
 
-    # Dummy SSH Key for testing if ~/.ssh/shared-VM-ssh-key-id_ed25519.pub doesn't exist
-    if not os.path.exists(
-        os.path.expanduser("~/.ssh/shared-VM-ssh-key-id_ed25519.pub")
-    ):
-        print(
-            "SSH public key not found. Creating a dummy vm_config.yaml and key for demonstration."
-        )
-        # Create a dummy config file
-        dummy_config_content = """
-base_vm_name: "your-base-vm-name" # Change this to an actual base VM name on your host
-master_nodes:
-  - name: "test-k8s-master-1"
-    ip_address: "192.168.122.101"
-    vcpu: 2
-    memory_gb: 2
-    disk_gb: 20
-    mac_address: "52:54:00:00:00:01"
-worker_nodes:
-  - name: "test-k8s-worker-1"
-    ip_address: "192.168.122.111"
-    vcpu: 2
-    memory_gb: 2
-    disk_gb: 20
-    mac_address: "52:54:00:00:00:11"
-ssh_user: youruser
-ssh_public_key_path: "~/.ssh/dummy_vm_ssh_key.pub"
-ssh_private_key_path: "~/.ssh/dummy_vm_ssh_key"
-cloud_init_global_config:
-  nameservers:
-    - "8.8.8.8"
-  disable_root_pw: true
-"""
-        with open(CONFIG_FILE, "w") as f:
-            f.write(dummy_config_content)
+    parser = argparse.ArgumentParser(
+        description="A CLI tool for managing virtual machines.",
+        formatter_class=argparse.RawTextHelpFormatter,
+    )
 
-        # Generate dummy SSH key pair
-        dummy_ssh_pub_path = os.path.expanduser("~/.ssh/dummy_vm_ssh_key.pub")
-        dummy_ssh_priv_path = os.path.expanduser("~/.ssh/dummy_vm_ssh_key")
-        if not os.path.exists(os.path.dirname(dummy_ssh_pub_path)):
-            os.makedirs(os.path.dirname(dummy_ssh_pub_path))
-        OSUtils.run_command(
-            ["ssh-keygen", "-t", "ed25519", "-f", dummy_ssh_priv_path, "-N", ""],
-            shell=False,
-        )
-        print(f"Dummy SSH key pair generated at {dummy_ssh_priv_path}")
+    parser.add_argument(
+        "-c",
+        "--config",
+        default=CONFIG_FILE,
+        help=f"Path to the VM configuration YAML file (default: {CONFIG_FILE})",
+    )
 
-    # --- Actual Usage ---
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    list_parser = subparsers.add_parser(
+        "list", help="List all existing virtual machines."
+    )
+
+    create_parser = subparsers.add_parser(
+        "create", help="Create a virtual machine based on the configuration."
+    )
+    create_parser.add_argument(
+        "node_name",
+        nargs="?",
+        help="Specify a single node to create by name (e.g., 'test-k8s-master-1').\n"
+        "If omitted, all nodes defined in the config file will be created.",
+    )
+
+    delete_parser = subparsers.add_parser("delete", help="Delete a virtual machine.")
+    delete_parser.add_argument(
+        "vm_name",
+        help="The name of the VM to delete (e.g., 'test-k8s-master-1').",
+    )
+
+    args = parser.parse_args()
+
     try:
-        parser = VMConfigParser(CONFIG_FILE)
-        hub = CLI(parser)
-        hub.list_available_commands()
+        if not os.path.exists(args.config):
+            raise FileNotFoundError(
+                f"Configuration file '{args.config}' not found. Please provide a valid configuration file."
+            )
 
+        vm_config_parser = VMConfigParser(args.config)
+        cli_app = CLI(vm_config_parser)
+
+        if args.command == "list":
+            cli_app.list_vms()
+        elif args.command == "create":
+            if args.node_name:
+                found_node = None
+                for node in cli_app.all_nodes_config:
+                    if node["name"] == args.node_name:
+                        found_node = node
+                        break
+                if found_node:
+                    cli_app.create_vm(found_node)
+                else:
+                    print(f"Error: Node '{args.node_name}' not found in configuration.")
+            else:
+                for node_config in cli_app.all_nodes_config:
+                    cli_app.create_vm(node_config)
+        elif args.command == "delete":
+            cli_app.delete_vm(args.vm_name)
+        else:
+            parser.print_help()  # If no command is given, print general help
+
+    except FileNotFoundError as fnfe:
+        print(f"Error: {fnfe}")
+        # Exit with a non-zero status code to indicate an error
+        exit(1)
     except Exception as e:
-        print(f"An error occurred in the main execution block: {e}")
+        print(f"An unexpected error occurred: {e}")
+        exit(1)

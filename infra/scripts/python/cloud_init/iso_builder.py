@@ -1,5 +1,4 @@
 import os
-import subprocess
 from cloud_init.config import CloudInit
 from utils import OSUtils
 
@@ -18,12 +17,6 @@ class CloudInitISOBuilder:
         self.config.save_configs(self.vm_output_dir)
 
         try:
-            OSUtils.run_command(
-                ["command", "-v", "cloud-localds"], check_output=True, shell=True
-            )
-            OSUtils.run_command(["cloud-localds", self.iso_path, self.vm_output_dir])
-
-        except subprocess.CalledProcessError:
             mkisofs_cmd = [
                 "mkisofs",
                 "-output",
