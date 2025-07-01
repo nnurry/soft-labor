@@ -1,11 +1,18 @@
 import os
+import shutil
 import uuid
 from utils import OSUtils
 import xml.etree.ElementTree as ET
 
 
 class VMBuilder:
-    def __init__(self, vm_config: dict, base_vm_name: str, cloud_init_iso_path: str):
+    def __init__(
+        self,
+        vm_config: dict,
+        base_vm_name: str,
+        cloud_init_iso_path: str,
+        is_cow_clone: bool = True,
+    ):
         self.vm_config = vm_config
         self.base_vm_name = base_vm_name
         self.cloud_init_iso_path = cloud_init_iso_path
@@ -15,6 +22,7 @@ class VMBuilder:
         self.disk_gb = vm_config["disk_gb"]
         self.mac_address = vm_config["mac_address"]
         self.disk_dir = None  # To be determined from base VM XML
+        self.is_cow_clone = is_cow_clone
 
     def _get_base_disk_path(self) -> str:
         base_xml = OSUtils.run_command(
@@ -26,23 +34,27 @@ class VMBuilder:
                 return disk.attrib["file"]
         raise ValueError(f"Could not find base disk path for VM: {self.base_vm_name}")
 
-    def _clone_disk(self, base_disk_path: str) -> str:
+    def _clone_disk(self, base_disk_path: str, is_cow: bool = True) -> str:
         self.disk_dir = os.path.dirname(base_disk_path)
         new_disk_path = os.path.join(self.disk_dir, f"{self.vm_name}.qcow2")
 
-        qemu_img_cmd = [
-            "qemu-img",
-            "create",
-            "-f",
-            "qcow2",
-            "-b",
-            base_disk_path,
-            "-F",
-            "qcow2",
-            new_disk_path,
-            f"{self.disk_gb}G",
-        ]
-        OSUtils.run_command(qemu_img_cmd, sudo=True)
+        if is_cow:
+            qemu_img_cmd = [
+                "qemu-img",
+                "create",
+                "-f",
+                "qcow2",
+                "-b",
+                base_disk_path,
+                "-F",
+                "qcow2",
+                new_disk_path,
+                f"{self.disk_gb}G",
+            ]
+            OSUtils.run_command(qemu_img_cmd, sudo=True)
+
+        else:
+            shutil.copyfile(base_disk_path, new_disk_path)
         return new_disk_path
 
     def _generate_vm_xml(self, new_disk_path: str) -> str:
@@ -113,7 +125,7 @@ class VMBuilder:
 
     def define_and_start_vm(self) -> None:
         base_disk_path = self._get_base_disk_path()
-        new_disk_path = self._clone_disk(base_disk_path)
+        new_disk_path = self._clone_disk(base_disk_path, self.is_cow_clone)
 
         vm_xml = self._generate_vm_xml(new_disk_path)
         xml_path = f"/tmp/vm-{uuid.uuid4()}.xml"
