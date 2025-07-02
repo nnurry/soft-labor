@@ -63,7 +63,7 @@ class CLI:
                 ),
                 packages=self.config_parser.cloud_init_global_config.get("packages"),
                 runcmd=self.config_parser.cloud_init_global_config.get("runcmd"),
-                gateway="192.168.122.1",  # Assuming default virbr0 gateway
+                gateway=node_config["gateway_address"],
             )
 
             iso_builder = CloudInitISOBuilder(

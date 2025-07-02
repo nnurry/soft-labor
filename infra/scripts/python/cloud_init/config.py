@@ -8,22 +8,16 @@ class UserData:
     def __init__(
         self,
         hostname: str,
-        ip_address: str,
         ssh_user: str,
         ssh_public_keys_content: list[str],
-        nameservers: list[str],
-        gateway: str,
         timezone: str = None,
         package_update: bool = False,
         packages: list[str] = None,
         runcmd: list[str] = None,
     ):
         self.hostname = hostname
-        self.ip_address = ip_address
         self.ssh_user = ssh_user
         self.ssh_public_keys_content = ssh_public_keys_content
-        self.nameservers = nameservers
-        self.gateway = gateway
         self.timezone = timezone
         self.package_update = package_update
         self.packages = packages if packages is not None else []
@@ -41,17 +35,6 @@ class UserData:
                     "ssh_authorized_keys": self.ssh_public_keys_content,
                 }
             ],
-            "network": {
-                "version": 2,
-                "ethernets": {
-                    "eth0": {
-                        "dhcp4": False,
-                        "addresses": [f"{self.ip_address}/24"],
-                        "gateway4": self.gateway,
-                        "nameservers": {"addresses": self.nameservers},
-                    }
-                },
-            },
         }
 
         if self.timezone:
@@ -69,6 +52,39 @@ class UserData:
             + yaml.dump(
                 user_data_content, indent=2, default_flow_style=False, sort_keys=False
             )
+        )
+
+
+class NetworkConfig:
+    def __init__(
+        self,
+        ip_address: str,
+        nameservers: list[str],
+        gateway: str,
+    ):
+        self.ip_address = ip_address
+        self.nameservers = nameservers
+        self.gateway = gateway
+
+    def to_yaml(self) -> str:
+        network_config = {
+            "network": {
+                "version": 2,
+                "ethernets": {
+                    "eth0": {
+                        "dhcp4": False,
+                        "addresses": [f"{self.ip_address}/24"],
+                        "gateway4": self.gateway,
+                        "nameservers": {
+                            "addresses": self.nameservers,
+                        },
+                    }
+                },
+            },
+        }
+
+        return yaml.dump(
+            network_config, indent=2, default_flow_style=False, sort_keys=False
         )
 
 
@@ -101,15 +117,17 @@ class CloudInit:
     ):
         self.user_data_config = UserData(
             hostname=hostname,
-            ip_address=ip_address,
             ssh_user=ssh_user,
             ssh_public_keys_content=ssh_public_keys_content,
-            nameservers=nameservers,
-            gateway=gateway,
             timezone=timezone,
             package_update=package_update,
             packages=packages,
             runcmd=runcmd,
+        )
+        self.network_config = NetworkConfig(
+            ip_address=ip_address,
+            nameservers=nameservers,
+            gateway=gateway,
         )
         self.meta_data_config = MetaData(hostname=hostname)
 
@@ -119,14 +137,21 @@ class CloudInit:
     def generate_meta_data(self) -> str:
         return self.meta_data_config.to_json()
 
+    def generate_network_config(self) -> str:
+        return self.network_config.to_yaml()
+
     def save_configs(self, output_dir: str):
         os.makedirs(output_dir, exist_ok=True)
 
         user_data_path = os.path.join(output_dir, "user-data")
         meta_data_path = os.path.join(output_dir, "meta-data")
+        network_config_path = os.path.join(output_dir, "network-config")
 
         with open(user_data_path, "w") as f:
             f.write(self.generate_user_data())
 
         with open(meta_data_path, "w") as f:
             f.write(self.generate_meta_data())
+
+        with open(network_config_path, "w") as f:
+            f.write(self.generate_network_config())

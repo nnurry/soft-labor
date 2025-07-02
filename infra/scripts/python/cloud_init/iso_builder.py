@@ -29,6 +29,7 @@ class CloudInitISOBuilder:
                 "-r",
                 os.path.join(self.vm_output_dir, "user-data"),
                 os.path.join(self.vm_output_dir, "meta-data"),
+                os.path.join(self.vm_output_dir, "network-config"),
             ]
             
             OSUtils.run_command(mkisofs_cmd)
