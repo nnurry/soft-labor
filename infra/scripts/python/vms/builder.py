@@ -11,7 +11,6 @@ class VMBuilder:
         vm_config: dict,
         base_vm_name: str,
         cloud_init_iso_path: str,
-        is_cow_clone: bool = True,
     ):
         self.vm_config = vm_config
         self.base_vm_name = base_vm_name
@@ -22,7 +21,7 @@ class VMBuilder:
         self.disk_gb = vm_config["disk_gb"]
         self.mac_address = vm_config["mac_address"]
         self.disk_dir = None  # To be determined from base VM XML
-        self.is_cow_clone = is_cow_clone
+        self.is_cow_clone = vm_config.get("is_cow_clone", True)
 
     def _get_base_disk_path(self) -> str:
         base_xml = OSUtils.run_command(
